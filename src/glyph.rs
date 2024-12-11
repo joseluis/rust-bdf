@@ -2,7 +2,7 @@ use crate::{Bitmap, BoundingBox, Direction};
 use std::ops::{Deref, DerefMut};
 
 /// A font glyph.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Glyph {
     name: Option<String>,
     codepoint: Option<char>,
@@ -19,28 +19,6 @@ pub struct Glyph {
 
     bounds: Option<BoundingBox>,
     map: Bitmap,
-}
-
-impl Default for Glyph {
-    fn default() -> Self {
-        Glyph {
-            name: None,
-            codepoint: None,
-
-            direction: Default::default(),
-
-            scalable_width: None,
-            device_width: None,
-
-            alternate_scalable_width: None,
-            alternate_device_width: None,
-
-            vector: None,
-
-            bounds: Default::default(),
-            map: Default::default(),
-        }
-    }
 }
 
 impl Glyph {

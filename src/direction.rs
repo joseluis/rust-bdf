@@ -1,7 +1,8 @@
 /// The direction of the glyph.
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Direction {
     /// Default direction, typically lef-to-right.
+    #[default]
     Default,
 
     /// Alternate direction, typically right-to-left.
@@ -9,10 +10,4 @@ pub enum Direction {
 
     /// Both directions.
     Both,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::Default
-    }
 }

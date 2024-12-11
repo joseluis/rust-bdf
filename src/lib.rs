@@ -3,13 +3,10 @@
 //! This crate allows you to read and write BDF fonts in Rust.
 //!
 //! # Example
-//!
 //! This example will draw a given glyph in your terminal using the given font.
 //!
-//! ```rust,no_run
-//! use std::char;
-//! use std::env;
-//! use std::process::exit;
+//! ```no_run
+//! use std::{env, process};
 //!
 //! let font = bdf::open(env::args().nth(1).expect("missing font file")).unwrap();
 //! let codepoint = char::from_u32(
@@ -20,7 +17,7 @@
 //!         .unwrap(),
 //! )
 //! .expect("invalid codepoint");
-//! let glyph = font.glyphs().get(&codepoint).unwrap_or_else(|| exit(1));
+//! let glyph = font.glyphs().get(&codepoint).unwrap_or_else(|| process::exit(1));
 //!
 //! for y in 0..glyph.height() {
 //!     for x in 0..glyph.width() {
@@ -40,32 +37,24 @@
 #[cfg(test)]
 mod tests;
 
-mod property;
-pub use self::property::Property;
-
-mod glyph;
-pub use self::glyph::Glyph;
-
-mod bounding_box;
-pub use self::bounding_box::BoundingBox;
-
-mod direction;
-pub use self::direction::Direction;
-
 mod bitmap;
-pub use self::bitmap::Bitmap;
-
-mod font;
-pub use self::font::*;
-
+mod bounding_box;
+mod direction;
 mod entry;
-pub use self::entry::Entry;
-
 mod error;
-pub use self::error::Error;
-
+mod font;
+mod glyph;
+mod property;
 mod reader;
-pub use self::reader::{open, read, Reader};
-
 mod writer;
-pub use self::writer::{save, write, Writer};
+
+pub use bitmap::Bitmap;
+pub use bounding_box::BoundingBox;
+pub use direction::Direction;
+pub use entry::Entry;
+pub use error::Error;
+pub use font::*;
+pub use glyph::Glyph;
+pub use property::Property;
+pub use reader::{open, read, Reader};
+pub use writer::{save, write, Writer};

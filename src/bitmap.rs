@@ -1,5 +1,5 @@
 use bit_set::BitSet;
-use std::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
 
 /// The bitmap of a glyph.
 #[derive(PartialEq, Eq, Clone, Debug)]

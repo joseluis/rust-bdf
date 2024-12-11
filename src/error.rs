@@ -1,4 +1,5 @@
-use std::{fmt, io, num};
+use core::{fmt, num};
+use std::io;
 
 /// Errors for `Reader` and `Writer`.
 #[derive(Debug)]
