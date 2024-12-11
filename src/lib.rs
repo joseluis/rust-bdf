@@ -37,6 +37,9 @@
 #![warn(missing_docs)]
 #![allow(clippy::empty_docs)]
 
+#[cfg(test)]
+mod tests;
+
 mod property;
 pub use self::property::Property;
 

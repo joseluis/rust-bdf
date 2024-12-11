@@ -5,9 +5,6 @@ use std::{
     path::Path,
 };
 
-#[cfg(test)]
-mod tests;
-
 // helper
 macro_rules! write { ($dst:expr, $($arg:tt)*) => ( $dst.write_all(format!($($arg)*).as_bytes())?) }
 

@@ -24,22 +24,3 @@ impl Property {
 pub fn extract(string: &str) -> String {
     string[1..string.len() - 1].replace("\"\"", "\"")
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn parse_property() {
-        assert_eq!(
-            Property::String("Hello World".into()),
-            Property::parse(r#""Hello World""#)
-        );
-        assert_eq!(
-            Property::String("Hello World".into()),
-            Property::parse(r#"Hello World"#)
-        );
-        assert_eq!(Property::Integer(41), Property::parse(r#"41"#));
-        assert_eq!(Property::String("41".into()), Property::parse(r#""41""#));
-    }
-}
