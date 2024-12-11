@@ -1,5 +1,4 @@
 use std::io::{BufRead, BufReader, Lines, Read};
-use std::{char, u64};
 
 use crate::{Bitmap, BoundingBox, Direction, Entry, Error, Property};
 
@@ -48,9 +47,9 @@ impl<T: Read> Reader<T> {
         let line_number = self.line_number;
 
         let (id, rest) = match line.find(' ') {
-            Some(n) => (&line[0..n], Some((&line[n..]).trim())),
+            Some(n) => (&line[0..n], Some(line[n..].trim())),
 
-            None => ((&line[..]).trim(), None),
+            None => (line[..].trim(), None),
         };
 
         match id {

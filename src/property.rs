@@ -24,7 +24,7 @@ impl Property {
 
 #[inline]
 pub fn extract(string: &str) -> String {
-    (&string[1..string.len() - 1]).replace("\"\"", "\"")
+    string[1..string.len() - 1].replace("\"\"", "\"")
 }
 
 #[cfg(test)]

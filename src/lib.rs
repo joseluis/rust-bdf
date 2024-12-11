@@ -35,8 +35,7 @@
 //! ```
 
 #![warn(missing_docs)]
-
-extern crate bit_set;
+#![allow(clippy::empty_docs)]
 
 mod property;
 pub use self::property::Property;

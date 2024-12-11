@@ -94,7 +94,7 @@ impl Glyph {
     /// Gets the name.
     #[inline]
     pub fn name(&self) -> &str {
-        &self.name.as_ref().unwrap().as_ref()
+        self.name.as_ref().unwrap().as_ref()
     }
 
     /// Sets the name.
@@ -246,7 +246,7 @@ pub struct PixelIter<'a> {
     map: &'a Bitmap,
 }
 
-impl<'a> Iterator for PixelIter<'a> {
+impl Iterator for PixelIter<'_> {
     type Item = ((u32, u32), bool);
 
     #[inline]
@@ -281,4 +281,4 @@ impl<'a> Iterator for PixelIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for PixelIter<'a> {}
+impl ExactSizeIterator for PixelIter<'_> {}
