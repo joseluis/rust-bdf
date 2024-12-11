@@ -40,6 +40,11 @@ macro_rules! parse_int {
 }
 
 impl<T: Read> Reader<T> {
+    /// Create a `Reader` from a `Read`.
+    pub fn new(stream: T) -> Self {
+        Reader::from(stream)
+    }
+
     /// Get the next entry.
     pub fn entry(&mut self) -> Result<Entry, Error> {
         let mut line = String::new();
@@ -383,132 +388,131 @@ impl<T: Read> Iterator for Reader<T> {
     }
 }
 
-/// Create a `Reader` from a `Read`.
-pub fn new<T: Read>(stream: T) -> Reader<T> {
-    Reader::from(stream)
-}
+impl Font {
+    /// Open a BDF file and read it into a `Font`.
+    pub fn open<T: AsRef<Path>>(path: T) -> Result<Font, Error> {
+        Font::read(File::open(path)?)
+    }
 
-/// Open a BDF file and read it into a `Font`.
-pub fn open<T: AsRef<Path>>(path: T) -> Result<Font, Error> {
-    read(File::open(path)?)
-}
-
-/// Read a BDF stream into a `Font`.
-pub fn read<T: Read>(stream: T) -> Result<Font, Error> {
-    let mut font = Font::default();
-    let mut reader = new(stream);
-    let mut in_font = false;
-    let mut in_props = false;
-    let mut in_char = false;
-    let mut skip_current_char = false;
-    let mut glyph = Glyph::default();
-    loop {
-        let entry = match reader.entry() {
-            Ok(entry) => entry,
-            // The codepoint could not be represented as a rust `char`
-            Err(Error::InvalidCodepoint { .. }) => {
-                // TODO: Log a warning or provide other programatic way of returning warnings about
-                // invalid codepoints.
-                skip_current_char = true;
-                continue;
-            }
-            Err(e) => return Err(e),
-        };
-        if in_font {
-            if let Entry::EndFont = entry {
-                if in_char {
-                    return Err(Error::MalformedChar);
-                }
-                if in_props {
-                    return Err(Error::MalformedProperties);
-                }
-                if !font.validate() {
-                    return Err(Error::MalformedFont);
-                }
-                return Ok(font);
-            }
-            if let Entry::StartProperties(..) = entry {
-                if in_char {
-                    return Err(Error::MalformedChar);
-                }
-                in_props = true;
-                continue;
-            }
-            if in_props {
-                if let Entry::EndProperties = entry {
-                    in_props = false;
+    /// Read a BDF stream into a `Font`.
+    pub fn read<T: Read>(stream: T) -> Result<Font, Error> {
+        let mut font = Font::default();
+        let mut reader = Reader::new(stream);
+        let mut in_font = false;
+        let mut in_props = false;
+        let mut in_char = false;
+        let mut skip_current_char = false;
+        let mut glyph = Glyph::default();
+        loop {
+            let entry = match reader.entry() {
+                Ok(entry) => entry,
+                // The codepoint could not be represented as a rust `char`
+                Err(Error::InvalidCodepoint { .. }) => {
+                    // TODO: Log a warning or provide other programatic way of returning warnings about
+                    // invalid codepoints.
+                    skip_current_char = true;
                     continue;
                 }
-                if let Entry::Property(name, value) = entry {
-                    font.properties_mut().insert(name, value);
-                    continue;
-                } else {
-                    return Err(Error::MalformedProperties);
-                }
-            }
-            if let Entry::StartChar(name) = entry {
-                if in_props {
-                    return Err(Error::MalformedProperties);
-                }
-                glyph.set_name(name);
-                in_char = true;
-                continue;
-            }
-            if in_char {
-                if let Entry::EndChar = entry {
-                    if skip_current_char {
-                        skip_current_char = false;
-                    } else {
-                        if !glyph.validate() {
-                            return Err(Error::MalformedChar);
-                        }
-                        font.glyphs_mut().insert(glyph.codepoint(), glyph);
+                Err(e) => return Err(e),
+            };
+            if in_font {
+                if let Entry::EndFont = entry {
+                    if in_char {
+                        return Err(Error::MalformedChar);
                     }
-                    in_char = false;
-                    glyph = Glyph::default();
+                    if in_props {
+                        return Err(Error::MalformedProperties);
+                    }
+                    if !font.validate() {
+                        return Err(Error::MalformedFont);
+                    }
+                    return Ok(font);
+                }
+                if let Entry::StartProperties(..) = entry {
+                    if in_char {
+                        return Err(Error::MalformedChar);
+                    }
+                    in_props = true;
+                    continue;
+                }
+                if in_props {
+                    if let Entry::EndProperties = entry {
+                        in_props = false;
+                        continue;
+                    }
+                    if let Entry::Property(name, value) = entry {
+                        font.properties_mut().insert(name, value);
+                        continue;
+                    } else {
+                        return Err(Error::MalformedProperties);
+                    }
+                }
+                if let Entry::StartChar(name) = entry {
+                    if in_props {
+                        return Err(Error::MalformedProperties);
+                    }
+                    glyph.set_name(name);
+                    in_char = true;
+                    continue;
+                }
+                if in_char {
+                    if let Entry::EndChar = entry {
+                        if skip_current_char {
+                            skip_current_char = false;
+                        } else {
+                            if !glyph.validate() {
+                                return Err(Error::MalformedChar);
+                            }
+                            font.glyphs_mut().insert(glyph.codepoint(), glyph);
+                        }
+                        in_char = false;
+                        glyph = Glyph::default();
+                        continue;
+                    }
+                    match entry {
+                        Entry::Encoding(codepoint) => glyph.set_codepoint(codepoint),
+                        Entry::ScalableWidth(x, y) => glyph.set_scalable_width(Some((x, y))),
+                        Entry::DeviceWidth(x, y) => glyph.set_device_width(Some((x, y))),
+                        Entry::AlternateScalableWidth(x, y) => {
+                            glyph.set_alternate_scalable_width(Some((x, y)))
+                        }
+                        Entry::AlternateDeviceWidth(x, y) => {
+                            glyph.set_alternate_device_width(Some((x, y)))
+                        }
+                        Entry::Vector(x, y) => glyph.set_vector(Some((x, y))),
+                        Entry::BoundingBox(bbx) => glyph.set_bounds(bbx),
+                        Entry::Bitmap(map) => glyph.set_map(map),
+                        _ => return Err(Error::MalformedChar),
+                    }
                     continue;
                 }
                 match entry {
-                    Entry::Encoding(codepoint) => glyph.set_codepoint(codepoint),
-                    Entry::ScalableWidth(x, y) => glyph.set_scalable_width(Some((x, y))),
-                    Entry::DeviceWidth(x, y) => glyph.set_device_width(Some((x, y))),
+                    Entry::Comment(..) | Entry::Chars(..) => (),
+                    Entry::ContentVersion(version) => font.set_version(Some(version)),
+                    Entry::Font(name) => font.set_name(name),
+                    Entry::Size(pt, x, y) => font.set_size(font::Size { pt, x, y }),
+                    Entry::FontBoundingBox(bbx) => font.set_bounds(bbx),
+                    Entry::ScalableWidth(x, y) => font.set_scalable_width(Some((x, y))),
+                    Entry::DeviceWidth(x, y) => font.set_device_width(Some((x, y))),
                     Entry::AlternateScalableWidth(x, y) => {
-                        glyph.set_alternate_scalable_width(Some((x, y)))
+                        font.set_alternate_scalable_width(Some((x, y)))
                     }
                     Entry::AlternateDeviceWidth(x, y) => {
-                        glyph.set_alternate_device_width(Some((x, y)))
+                        font.set_alternate_device_width(Some((x, y)))
                     }
-                    Entry::Vector(x, y) => glyph.set_vector(Some((x, y))),
-                    Entry::BoundingBox(bbx) => glyph.set_bounds(bbx),
-                    Entry::Bitmap(map) => glyph.set_map(map),
-                    _ => return Err(Error::MalformedChar),
+                    Entry::Vector(x, y) => font.set_vector(Some((x, y))),
+                    _ => return Err(Error::MalformedFont),
                 }
                 continue;
             }
             match entry {
-                Entry::Comment(..) | Entry::Chars(..) => (),
-                Entry::ContentVersion(version) => font.set_version(Some(version)),
-                Entry::Font(name) => font.set_name(name),
-                Entry::Size(pt, x, y) => font.set_size(font::Size { pt, x, y }),
-                Entry::FontBoundingBox(bbx) => font.set_bounds(bbx),
-                Entry::ScalableWidth(x, y) => font.set_scalable_width(Some((x, y))),
-                Entry::DeviceWidth(x, y) => font.set_device_width(Some((x, y))),
-                Entry::AlternateScalableWidth(x, y) => {
-                    font.set_alternate_scalable_width(Some((x, y)))
+                Entry::Comment(..) => (),
+                Entry::StartFont(format) => {
+                    font.set_format(format);
+                    in_font = true;
                 }
-                Entry::AlternateDeviceWidth(x, y) => font.set_alternate_device_width(Some((x, y))),
-                Entry::Vector(x, y) => font.set_vector(Some((x, y))),
                 _ => return Err(Error::MalformedFont),
             }
-            continue;
-        }
-        match entry {
-            Entry::Comment(..) => (),
-            Entry::StartFont(format) => {
-                font.set_format(format);
-                in_font = true;
-            }
-            _ => return Err(Error::MalformedFont),
         }
     }
 }

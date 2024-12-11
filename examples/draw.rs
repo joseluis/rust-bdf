@@ -1,8 +1,8 @@
-use std::env;
-use std::process::exit;
+use std::{env, process::exit};
+use bdf::Font;
 
 fn main() {
-    let font = bdf::open(env::args().nth(1).expect("missing font file")).unwrap();
+    let font = Font::open(env::args().nth(1).expect("missing font file")).unwrap();
     let codepoint = env::args()
         .nth(2)
         .expect("missing string")

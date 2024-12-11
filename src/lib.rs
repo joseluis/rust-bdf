@@ -7,8 +7,9 @@
 //!
 //! ```no_run
 //! use std::{env, process};
+//! use bdf::Font;
 //!
-//! let font = bdf::open(env::args().nth(1).expect("missing font file")).unwrap();
+//! let font = Font::open(env::args().nth(1).expect("missing font file")).unwrap();
 //! let codepoint = char::from_u32(
 //!     env::args()
 //!         .nth(2)
@@ -46,5 +47,5 @@ mod writer;
 pub use error::Error;
 pub use font::{Bitmap, Direction, Entry, Font, Property, Size};
 pub use glyph::{BoundingBox, Glyph};
-pub use reader::{open, read, Reader};
-pub use writer::{save, write, Writer};
+pub use reader::Reader;
+pub use writer::Writer;

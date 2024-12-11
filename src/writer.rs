@@ -19,6 +19,11 @@ impl<T: Write> From<T> for Writer<T> {
 }
 
 impl<T: Write> Writer<T> {
+    /// Create a `Writer` from a `Write`.
+    pub fn new(stream: T) -> Writer<T> {
+        Writer::from(stream)
+    }
+
     /// Write an entry.
     pub fn entry(&mut self, entry: &Entry) -> Result<(), Error> {
         match *entry {
@@ -90,88 +95,85 @@ impl<T: Write> Writer<T> {
     }
 }
 
-/// Create a `Writer` from a `Write`.
-pub fn new<T: Write>(stream: T) -> Writer<T> {
-    Writer::from(stream)
-}
+impl Font {
+    /// Save the font into a BDF file.
+    pub fn save<T: AsRef<Path>>(&self, path: T) -> Result<(), Error> {
+        self.write(File::create(path)?)
+    }
 
-/// Save the font into a BDF file.
-pub fn save<T: AsRef<Path>>(path: T, font: &Font) -> Result<(), Error> {
-    write(File::create(path)?, font)
-}
-
-/// Write the font to the writer.
-pub fn write<T: Write>(stream: T, font: &Font) -> Result<(), Error> {
-    if !font.validate() {
-        return Err(Error::MalformedFont);
-    }
-    if font.glyphs().iter().any(|(_, g)| !g.validate()) {
-        return Err(Error::MalformedChar);
-    }
-    let mut writer = new(stream);
-    writer.entry(&Entry::StartFont(font.format().to_owned()))?;
-    writer.entry(&Entry::Font(font.name().to_owned()))?;
-    writer.entry(&Entry::Size(font.size().pt, font.size().x, font.size().y))?;
-
-    if let Some(version) = font.version() {
-        writer.entry(&Entry::ContentVersion(version.to_owned()))?;
-    }
-    writer.entry(&Entry::FontBoundingBox(*font.bounds()))?;
-
-    if font.direction() != Direction::Default {
-        writer.entry(&Entry::Direction(font.direction()))?;
-    }
-    if let Some(&(x, y)) = font.scalable_width() {
-        writer.entry(&Entry::ScalableWidth(x, y))?;
-    }
-    if let Some(&(x, y)) = font.device_width() {
-        writer.entry(&Entry::DeviceWidth(x, y))?;
-    }
-    if let Some(&(x, y)) = font.alternate_scalable_width() {
-        writer.entry(&Entry::AlternateScalableWidth(x, y))?;
-    }
-    if let Some(&(x, y)) = font.alternate_device_width() {
-        writer.entry(&Entry::AlternateDeviceWidth(x, y))?;
-    }
-    if let Some(&(x, y)) = font.vector() {
-        writer.entry(&Entry::Vector(x, y))?;
-    }
-    if !font.properties().is_empty() {
-        writer.entry(&Entry::StartProperties(font.properties().len()))?;
-
-        for (name, value) in font.properties() {
-            writer.entry(&Entry::Property(name.clone(), value.clone()))?;
+    /// Write the font to the writer.
+    pub fn write<T: Write>(&self, stream: T) -> Result<(), Error> {
+        if !self.validate() {
+            return Err(Error::MalformedFont);
         }
-        writer.entry(&Entry::EndProperties)?;
-    }
-    writer.entry(&Entry::Chars(font.glyphs().len()))?;
-
-    for (codepoint, glyph) in font.glyphs() {
-        writer.entry(&Entry::StartChar(glyph.name().to_owned()))?;
-        writer.entry(&Entry::Encoding(*codepoint))?;
-
-        if glyph.direction() != Direction::Default {
-            writer.entry(&Entry::Direction(glyph.direction()))?;
+        if self.glyphs().iter().any(|(_, g)| !g.validate()) {
+            return Err(Error::MalformedChar);
         }
-        if let Some(&(x, y)) = glyph.scalable_width() {
+        let mut writer = Writer::new(stream);
+        writer.entry(&Entry::StartFont(self.format().to_owned()))?;
+        writer.entry(&Entry::Font(self.name().to_owned()))?;
+        writer.entry(&Entry::Size(self.size().pt, self.size().x, self.size().y))?;
+
+        if let Some(version) = self.version() {
+            writer.entry(&Entry::ContentVersion(version.to_owned()))?;
+        }
+        writer.entry(&Entry::FontBoundingBox(*self.bounds()))?;
+
+        if self.direction() != Direction::Default {
+            writer.entry(&Entry::Direction(self.direction()))?;
+        }
+        if let Some(&(x, y)) = self.scalable_width() {
             writer.entry(&Entry::ScalableWidth(x, y))?;
         }
-        if let Some(&(x, y)) = glyph.device_width() {
+        if let Some(&(x, y)) = self.device_width() {
             writer.entry(&Entry::DeviceWidth(x, y))?;
         }
-        if let Some(&(x, y)) = glyph.alternate_scalable_width() {
+        if let Some(&(x, y)) = self.alternate_scalable_width() {
             writer.entry(&Entry::AlternateScalableWidth(x, y))?;
         }
-        if let Some(&(x, y)) = glyph.alternate_device_width() {
+        if let Some(&(x, y)) = self.alternate_device_width() {
             writer.entry(&Entry::AlternateDeviceWidth(x, y))?;
         }
-        if let Some(&(x, y)) = glyph.vector() {
+        if let Some(&(x, y)) = self.vector() {
             writer.entry(&Entry::Vector(x, y))?;
         }
-        writer.entry(&Entry::BoundingBox(*glyph.bounds()))?;
-        writer.entry(&Entry::Bitmap(glyph.map().clone()))?;
-        writer.entry(&Entry::EndChar)?;
+        if !self.properties().is_empty() {
+            writer.entry(&Entry::StartProperties(self.properties().len()))?;
+
+            for (name, value) in self.properties() {
+                writer.entry(&Entry::Property(name.clone(), value.clone()))?;
+            }
+            writer.entry(&Entry::EndProperties)?;
+        }
+        writer.entry(&Entry::Chars(self.glyphs().len()))?;
+
+        for (codepoint, glyph) in self.glyphs() {
+            writer.entry(&Entry::StartChar(glyph.name().to_owned()))?;
+            writer.entry(&Entry::Encoding(*codepoint))?;
+
+            if glyph.direction() != Direction::Default {
+                writer.entry(&Entry::Direction(glyph.direction()))?;
+            }
+            if let Some(&(x, y)) = glyph.scalable_width() {
+                writer.entry(&Entry::ScalableWidth(x, y))?;
+            }
+            if let Some(&(x, y)) = glyph.device_width() {
+                writer.entry(&Entry::DeviceWidth(x, y))?;
+            }
+            if let Some(&(x, y)) = glyph.alternate_scalable_width() {
+                writer.entry(&Entry::AlternateScalableWidth(x, y))?;
+            }
+            if let Some(&(x, y)) = glyph.alternate_device_width() {
+                writer.entry(&Entry::AlternateDeviceWidth(x, y))?;
+            }
+            if let Some(&(x, y)) = glyph.vector() {
+                writer.entry(&Entry::Vector(x, y))?;
+            }
+            writer.entry(&Entry::BoundingBox(*glyph.bounds()))?;
+            writer.entry(&Entry::Bitmap(glyph.map().clone()))?;
+            writer.entry(&Entry::EndChar)?;
+        }
+        writer.entry(&Entry::EndFont)?;
+        Ok(())
     }
-    writer.entry(&Entry::EndFont)?;
-    Ok(())
 }

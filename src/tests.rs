@@ -17,10 +17,10 @@ mod property {
 }
 
 mod reader {
-    use crate::{reader, Bitmap, BoundingBox, Direction, Entry, Property};
+    use crate::{Bitmap, BoundingBox, Direction, Entry, Property, Reader};
 
     pub fn assert(string: &str, entry: Entry) {
-        let input = reader::new(string.as_bytes()).last().unwrap();
+        let input = Reader::new(string.as_bytes()).last().unwrap();
 
         assert_eq!(input, entry);
     }
@@ -251,14 +251,14 @@ mod reader {
 }
 
 mod writer {
-    use crate::{writer, Bitmap, BoundingBox, Direction, Entry, Property};
+    use crate::{Bitmap, BoundingBox, Direction, Entry, Property, Writer};
     use core::str::from_utf8;
 
     pub fn assert(entry: Entry, string: &str) {
         let mut output = Vec::new();
 
         {
-            let mut writer = writer::new(&mut output);
+            let mut writer = Writer::new(&mut output);
             writer.entry(&entry).unwrap();
         }
 
