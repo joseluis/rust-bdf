@@ -1,6 +1,47 @@
+use crate::{BoundingBox, Glyph};
 use std::collections::HashMap;
 
-use crate::{BoundingBox, Direction, Glyph, Property};
+/// The direction of the glyph.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Direction {
+    /// Default direction, typically lef-to-right.
+    #[default]
+    Default,
+
+    /// Alternate direction, typically right-to-left.
+    Alternate,
+
+    /// Both directions.
+    Both,
+}
+
+/// A `Font` property.
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum Property {
+    ///
+    String(String),
+
+    ///
+    Integer(i64),
+}
+
+impl Property {
+    /// Parse a property string.
+    pub fn parse(string: &str) -> Property {
+        if string.starts_with('"') {
+            Property::String(Property::extract(string))
+        } else if let Ok(int) = string.parse() {
+            Property::Integer(int)
+        } else {
+            Property::String(string.into())
+        }
+    }
+
+    ///
+    pub(crate) fn extract(string: &str) -> String {
+        string[1..string.len() - 1].replace("\"\"", "\"")
+    }
+}
 
 /// Size of a font.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]

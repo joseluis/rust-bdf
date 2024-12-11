@@ -1,5 +1,18 @@
-use crate::{Bitmap, BoundingBox, Direction};
-use std::ops::{Deref, DerefMut};
+use crate::{Bitmap, Direction};
+use core::ops::{Deref, DerefMut};
+
+/// The bounds of a glyph.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct BoundingBox {
+    ///
+    pub width: u32,
+    ///
+    pub height: u32,
+    ///
+    pub x: i32,
+    ///
+    pub y: i32,
+}
 
 /// A font glyph.
 #[derive(Clone, Debug, Default)]

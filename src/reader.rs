@@ -58,7 +58,7 @@ impl<T: Read> Reader<T> {
         match id {
             "COMMENT" => {
                 if let Some(rest) = rest {
-                    Ok(Entry::Comment(crate::property::extract(rest)))
+                    Ok(Entry::Comment(Property::extract(rest)))
                 } else {
                     Ok(Entry::Comment("".to_owned()))
                 }

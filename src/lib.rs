@@ -38,23 +38,17 @@
 mod tests;
 
 mod bitmap;
-mod bounding_box;
-mod direction;
 mod entry;
 mod error;
 mod font;
 mod glyph;
-mod property;
 mod reader;
 mod writer;
 
 pub use bitmap::Bitmap;
-pub use bounding_box::BoundingBox;
-pub use direction::Direction;
 pub use entry::Entry;
 pub use error::Error;
-pub use font::*;
-pub use glyph::Glyph;
-pub use property::Property;
+pub use font::{Direction, Font, Property, Size};
+pub use glyph::{BoundingBox, Glyph};
 pub use reader::{open, read, Reader};
 pub use writer::{save, write, Writer};
