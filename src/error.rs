@@ -1,16 +1,12 @@
-use std::io;
-use std::num;
-use thiserror::Error;
+use std::{fmt, io, num};
 
 /// Errors for `Reader` and `Writer`.
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum Error {
     /// A downstream IO error.
-    #[error("{0}")]
-    IO(#[from] io::Error),
+    IO(io::Error),
 
     /// A downstream parsing error.
-    #[error("{error} on line {line_number}: `{line}`")]
     Parse {
         /// The parser error
         error: num::ParseIntError,
@@ -21,7 +17,6 @@ pub enum Error {
     },
 
     /// `STARTFONT` is missing the format version.
-    #[error("Missing version from STARTFONT on line {line_number}: {line}")]
     MissingVersion {
         /// The line number in the font file this was encountered on
         line_number: u32,
@@ -30,7 +25,6 @@ pub enum Error {
     },
 
     /// There was no bounding box for a character.
-    #[error("Missing bounding box on line {line_number}: {line}")]
     MissingBoundingBox {
         /// The line number in the font file this was encountered on
         line_number: u32,
@@ -39,7 +33,6 @@ pub enum Error {
     },
 
     /// An entry is missing a value.
-    #[error("Missing value for property `{property_name}` on line {line_number}")]
     MissingValue {
         /// The name of the property that was missing a value
         property_name: String,
@@ -48,7 +41,6 @@ pub enum Error {
     },
 
     /// An unknown error.
-    #[error("An invalid codepoint has been found")]
     InvalidCodepoint {
         /// The line number in the font file this was encountered on
         line_number: u32,
@@ -56,19 +48,69 @@ pub enum Error {
         line: String,
     },
 
-    /// Eof has been reached.
-    #[error("End of file reached")]
+    /// EOF has been reached.
     End,
 
     /// The font declaration is malformed.
-    #[error("Malformed font definition")]
     MalformedFont,
 
     /// The property declarations are malformed.
-    #[error("Malformed properties definition")]
     MalformedProperties,
 
     /// The character declaration is malformed.
-    #[error("Malformed character definition")]
     MalformedChar,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::IO(err) => write!(f, "{}", err),
+            Error::Parse {
+                error,
+                line_number,
+                line,
+            } => write!(f, "{} on line {}: `{}`", error, line_number, line),
+            Error::MissingVersion { line_number, line } => write!(
+                f,
+                "Missing version from STARTFONT on line {}: {}",
+                line_number, line
+            ),
+            Error::MissingBoundingBox { line_number, line } => {
+                write!(f, "Missing bounding box on line {}: {}", line_number, line)
+            }
+            Error::MissingValue {
+                property_name,
+                line_number,
+            } => write!(
+                f,
+                "Missing value for property `{}` on line {}",
+                property_name, line_number
+            ),
+            Error::InvalidCodepoint { line_number, line } => write!(
+                f,
+                "An invalid codepoint has been found on line {}: {}",
+                line_number, line
+            ),
+            Error::End => write!(f, "End of file reached"),
+            Error::MalformedFont => write!(f, "Malformed font definition"),
+            Error::MalformedProperties => write!(f, "Malformed properties definition"),
+            Error::MalformedChar => write!(f, "Malformed character definition"),
+        }
+    }
+}
+
+impl core::error::Error for Error {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Error::IO(err) => Some(err),
+            Error::Parse { error, .. } => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(io: io::Error) -> Self {
+        Error::IO(io)
+    }
 }
